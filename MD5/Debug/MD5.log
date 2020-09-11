@@ -1,0 +1,15 @@
+﻿  Source.cpp
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\source.cpp(4): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+  md5.cpp
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(36): warning C4101: 'Q': unreferenced local variable
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(71): warning C4244: '=': conversion from 'double' to 'unsigned int', possible loss of data
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(111): warning C4244: 'initializing': conversion from 'ULL' to 'UI', possible loss of data
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(112): warning C4244: 'initializing': conversion from 'ULL' to 'UI', possible loss of data
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(123): warning C4309: '=': truncation of constant value
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(125): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(132): warning C4309: '=': truncation of constant value
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(133): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+  Generating Code...
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(20): warning C4715: 'func': not all control paths return a value
+c:\универ\8 семестр\9_п-а средства обеспечения иб\md5\md5.cpp(31): warning C4715: 'get': not all control paths return a value
+  MD5.vcxproj -> C:\Универ\8 семестр\9_П-А средства обеспечения ИБ\MD5\Debug\MD5.exe
