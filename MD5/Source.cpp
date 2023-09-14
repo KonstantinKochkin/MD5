@@ -1,166 +1,56 @@
-#include<iostream>
-#include<fstream>
-#include<iomanip>
-#include"md5.h";
-using namespace std;
+#include <iostream>
+#include "hasher.h"
 
-const char HASHFILE_NAME[] = "Hashfile.txt";
-const int LNAME = 30;
-const int LHASH = 32;
+//TODO добавить проверку по размеру файлов
 
-int main(int argc, char* argv[])
+int main(const int argc, const char* argv[])
 {
-	if (argc < 1 || argc>3)
-	{
-		cerr << "Eror, look to help!\n";
-		exit(-1);
-	}
 	if (argc == 1) //вывести все хеши из базы
 	{
-		ifstream hashfile(HASHFILE_NAME);
-		if (!hashfile) {
-			cerr << "HashFile is not found!\n";
-			exit(-1);
-		}
-		char name[LNAME];
-		char hash[LHASH + 1];
-		cout << setw(20) << left << "Name " << "   Hash md5" << endl;
-		hashfile.peek(); 
-		if (!hashfile) 
-			cout << "HashFile is empty!\n";
-		while (hashfile)
-		{
-			hashfile.getline(name, LNAME, ' ');
-			hashfile.getline(hash, LHASH + 1, '\n');
-			if (hashfile)
-			cout << setw(20) << left << name << "   " << hash << endl;
-		}
+		printAllHash();
 		return 0;
 	}
 	if (argc == 2) //сверить хеш
 	{
-		//посчитаем хеш
-		string hashnow = md5(argv[1]);
-		if (hashnow == "NULL") {
-			cerr << "File is not found or already open!\n";
-			exit(-1);
-		}
-		//отбрасывания пути к файлу
-		char filename[LNAME];
-		char temp[LNAME];
-		strcpy_s(temp, argv[1]);
-		_strrev(temp);
-		int len = strcspn(temp, "/\\");
-		strncpy_s(filename, temp, len);
-		_strrev(filename);
-
-		cout << "File name       : " << filename << "   Hash: " << hashnow << endl;
-
-		//просмотреть базу с хешами
-		ifstream hashfile(HASHFILE_NAME);
-		if (!hashfile) {
-			cerr << "HashFile is not found!\n";
-			exit(-1);
-		}
-		char name[LNAME];
-		char hash[LHASH+1];
-		bool checked_file_is_found=false;
-		while (hashfile)
-		{
-			hashfile.getline(name, LNAME, ' ');
-			hashfile.getline(hash, LHASH+1, '\n');
-			if (strcmp(name,filename)==0) {
-				checked_file_is_found = true;
-				break;
-			}
-		}
-		//вывести результат
-		if (!checked_file_is_found)
-			cout << "There are no such file in the database!\n";
-		else
-		{
-			cout << "File in database: " << filename << "   Hash: " << hash << endl;
-			if (strcmp(hash, hashnow.c_str()) == 0)
-				cout << "Result - TRUE. File has NOT been modified!\n";
-			else cout << "Result - FALSE. File has been modified!\n";
-		}
+		checkFile(argv[1]);
 		return 0;
 	}
-	if (argc == 3 && strcmp(argv[2],"/w")==0) //записать новый хеш
+	if (argc == 3 && strcmp(argv[2], "/W")==0) //записать новый хеш
 	{
-		fstream hashfile(HASHFILE_NAME,ios::in|ios::out|ios::_Nocreate);
-		if (!hashfile) {
-			cerr << "HashFile is not found!\n";
-			exit(-1);
-		}
-		//отбрасывания пути к файлу
-		char filename[LNAME];
-		char temp[LNAME];
-		strcpy_s(temp, argv[1]);
-		_strrev(temp);
-		int len = strcspn(temp, "/\\");
-		strncpy_s(filename, temp, len);
-		_strrev(filename);
-
-		//поиск файла в базе
-		char name[LNAME];
-		char hash[LHASH+1];
-		bool checked_file_is_found = false;
-		while (hashfile)
-		{
-			hashfile.getline(name, LNAME, ' ');
-			hashfile.getline(hash, LHASH+1, '\n');
-			if (strcmp(name, filename) == 0) {
-				checked_file_is_found = true;
-				break;
-			}
-		}
-
-		cout << "File : " << filename << endl;
-		if (!checked_file_is_found)
-		{
-			hashfile.clear();
-			hashfile.seekp(0, ios::end);
-			hashfile.write(filename, strlen(filename));
-			hashfile.put(' ');
+		updateHash(argv[1]);
+		return 0;
+	}
+	if (argc == 3 && strcmp(argv[2], "/H") == 0) //только вычислить хеш
+	{
+		auto&& hash = calculateHash(argv[1]);
+		std::cout << hash << std::endl;
+		return 0;
+	}
+	if (argc == 4 && strcmp(argv[2], "/C") == 0) //сравнить два хеша
+	{
+		auto&& hash1 = calculateHash(argv[1]);
+		auto&& hash2 = calculateHash(argv[3]);
+		std::cout << "File 1: " << argv[1] << "   Hash: " << hash1 << std::endl;
+		std::cout << "File 2: " << argv[3] << "   Hash: " << hash2 << std::endl;
+		if (hash1 == hash2) {
+			std::cout << "Files are IDENTICAL!\n";
 		}
 		else {
-			hashfile.seekg(-LHASH - 2, ios::cur);
-			cout << "The old hash        : " << hash << endl;
+			std::cout << "files are DIFFERENT!\n";
 		}
-		//считаем хеш
-		string hashnow = md5(argv[1]);
-		if (hashnow == "NULL") {
-			cerr << "File is not found or already open!\n";
-			exit(-1);
-		}
+		return 0;
+	}
+	std::cerr << "Error, look to help!\n\n";
+	std::cout <<
+		"The program is designed to check the integrity of files by calculating the MD5 hash.\n\n"
+		"MD5 [FILE [/W | /H | /C FILE2]]\n"
+		"The calculated hashes are stored in 'Hashfile.txt'. Running without arguments"
+		"displays all stored hashes. Running with the argument FILE calculates the hash"
+		"and tries to verify it.\n\n"
+		"    FILE - file name for hash calculation.\n"
+		"    /W - updates or writes new hash to the database.\n"
+		"    /H - only calculates hash.\n"
+		"    /C FILE2 - compares FILE and FILE2.\n";
 
-		cout << "The new hash was got: " << hashnow << endl;
-		hashfile.seekp(hashfile.tellg());
-		hashfile.write(hashnow.c_str(), LHASH);
-		hashfile.put('\n');
-		return 0;
-	}
-	if (argc == 3 && strcmp(argv[2], "/h") == 0) //только вычислить хеш
-	{
-		string hashnow = md5(argv[1]);
-		if (hashnow == "NULL") {
-			cerr << "File is not found or already open!\n";
-			exit(-1);
-		}
-		cout << hashnow << endl;
-		return 0;
-	}
-	cerr << "Eror, look to help!\n";
-	return 0;
+	return -1;
 }
-
-/*int main()
-{
-	char argv1[] = "MD5";
-	char argv2[] = "..\\MD5\\test4.txt";
-	char argv3[] = "";
-	char* argv[] = { argv1, argv2, argv3 };
-	main1(2, argv);
-	return 0;
-}*/
