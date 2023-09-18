@@ -11,7 +11,7 @@ displays all stored hashes.\n\n\
     /H - get help.\n\
     /S - calculate hash of string.\n\
     /F - calculate file hash and tries to verify it (/B - only calculate hash).\n\
-    /T - turns on text input mode (ñalculate the hash of the text. Signal to end input: ^Z).\n\
+    /T - turns on text input mode (calculate the hash of the text. Signal to end input: ^Z).\n\
     /W - updates or writes new hash to the database.\n\
     /C - compares file hashes.\n\
     /V - verify a file by hash.\n";
