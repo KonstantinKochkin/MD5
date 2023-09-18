@@ -5,7 +5,7 @@
     <LocalDebuggerCommandArguments>test2.txt</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>test2.txt /C test5.txt</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments> /W test\Autorunfs.exe</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

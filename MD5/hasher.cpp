@@ -3,70 +3,88 @@
 #include <iomanip>
 #include <filesystem>
 #include "md5.h"
+#include <sstream>
 
 namespace fs = std::filesystem;
 
-void checkFile(const std::istream& inp, const char* filename) {
-	if (!inp) {
-		std::cerr << filename << " is not found!\n";
-		exit(-1);
-	}
-}
-
-void checkHash(const std::string& hash) {
-	if (hash == "NULL") {
-		std::cerr << "Target file is not found or already open!\n";
-		exit(-1);
-	}
-}
-
-void checkData(const std::string& filename, const std::string& hash) {
-	if (filename.length() > FILENAME_SIZE || hash.length() != HASH_SIZE) {
-		std::cerr << "HashFile contains incorrect data!\n";
-		exit(-1);
-	}
-}
-
-bool findInHashfile(std::istream& hashfile, const std::string& filename, std::string& hash)
+std::ostream& operator<<(std::ostream& os, comparison_info& comp_info)
 {
-	std::string name;
+	os << "Full path:        " << comp_info.fullpath
+	   << "\nNew hash:         " << comp_info.newhash << std::endl;
+	if (!comp_info.storedhash.empty()) {
+		std::cout << "Hash in hashfile: " << comp_info.storedhash << std::endl;
+	}
+	return os;
+}
+
+
+void checkFile(const std::istream& inp, const char* filename) 
+{
+	if (!inp.good()) {
+		throw std::runtime_error('\"' + std::string(filename)
+			                     + "\" file does not exist or busy with another process!\n");
+	}
+}
+
+void checkData(const std::string& filename, const std::string& hash) 
+{
+	if (filename.length() > FILENAME_SIZE || hash.length() != HASH_SIZE) {
+		throw std::length_error("Hashfile contains incorrect data!\n");
+	}
+}
+
+bool findInHashfile(std::istream& hashfile, const std::string& filename, std::string& storedhash)
+{
+	std::string name, hash;
+
 	while (hashfile)
 	{
 		hashfile >> name >> hash;
-		hashfile.ignore(1000, '\n');
 		if (hashfile)
 		{
 			checkData(name, hash);
 
 			if (name == filename) {
+				storedhash = hash;
 				return true;
 			};
 		}
+		//hashfile.ignore(1000, '\n');
 	}
 	return false;
 }
 
-std::string calculateHash(const char* filename) 
+
+std::string hashForFile(const char* filename) 
 {
-	auto&& hash = md5(filename);
-	checkHash(hash);
-	return std::forward<std::string>(hash);
+	std::ifstream file(filename, std::ios::binary);
+	checkFile(file, filename);
+
+	return std::move(md5(file));
+}
+
+std::string hashForString(const char* str)
+{
+	std::istringstream stream(str);
+	return std::move(md5(stream));
+}
+
+std::string hashForStream(std::istream& stream)
+{
+	return std::move(md5(stream, true));
 }
 
 void printAllHash()
 {
 	std::ifstream hashfile(HASHFILE_NAME);
-	checkFile(hashfile, "Hashfile");
+	checkFile(hashfile, HASHFILE_NAME);
 
-	hashfile.seekg(0, std::ios::end);
-	if (hashfile.tellg() == 0) {
+	if (hashfile.peek() == -1) {
 		std::cout << "HashFile is empty!\n";
 		return;
 	}
-	hashfile.seekg(0);
 
-
-	std::cout << std::setw(20) << std::left << "Filename " << "   Hash md5" << std::endl;
+	std::cout << std::setw(55) << std::left << "Filename " << "md5 hash" << std::endl;
 
 	std::string filename, hash;
 	while (hashfile)
@@ -81,60 +99,59 @@ void printAllHash()
 	}
 }
 
-void checkFile(const char* filename)
+bool compareHash(const char* filename)
 {
-	auto&& newhash = calculateHash(filename);
+	comparison_info comp_info;
+	return compareHash(filename, comp_info);
+}
+
+bool compareHash(const char* filename, comparison_info& comp_info)
+{
+	comp_info.newhash = hashForFile(filename);
 
 	fs::path target_path {filename};
-	auto&& normal_path = replaceSpaces(fs::absolute(target_path).string());
-
-	std::cout << "File name:        " << normal_path << "   Hash: " << newhash << std::endl;
+	comp_info.fullpath = replaceSpaces(fs::absolute(target_path).string());
 
 	std::ifstream hashfile(HASHFILE_NAME);
-	checkFile(hashfile, "Hashfile");
+	checkFile(hashfile, HASHFILE_NAME);
 
-	std::string hash;
-	if (!findInHashfile(hashfile, normal_path, hash)) {
-		std::cout << "There are no such file in the database!\n";
-	}
-	else
-	{
-		std::cout << "File in database: " << normal_path << "   Hash: " << hash << std::endl;
-		if (newhash == hash) {
-			std::cout << "Result - TRUE. File has NOT been modified!\n";
-		}
-		else {
-			std::cout << "Result - FALSE. File has been modified!\n";
-		}
-	}
+	return (findInHashfile(hashfile, comp_info.fullpath, comp_info.storedhash)
+		    && comp_info.newhash == comp_info.storedhash                      );
 }
 
 void updateHash(const char* filename)
 {
+	comparison_info comp_info;
+	return updateHash(filename, comp_info);
+}
+
+void updateHash(const char* filename, comparison_info& comp_info)
+{
 	std::fstream hashfile(HASHFILE_NAME, std::ios::in | std::ios::out | std::ios::_Nocreate);
-	checkFile(hashfile, "Hashfile");
+	checkFile(hashfile, HASHFILE_NAME);
 
 	fs::path target_path {filename};
-	auto&& normal_path = replaceSpaces(fs::absolute(target_path).string());
-	std::cout << "File : " << normal_path << std::endl;
 
-	std::string hash;
-	if (!findInHashfile(hashfile, normal_path, hash))
+	auto& fullpath = comp_info.fullpath;
+	fullpath = replaceSpaces(fs::absolute(target_path).string());
+
+	comp_info.newhash = hashForFile(filename);
+
+	if (!findInHashfile(hashfile, fullpath, comp_info.storedhash))
 	{
 		hashfile.clear();
 		hashfile.seekp(0, std::ios::end);
-		hashfile.put('\n');
-		hashfile.write(normal_path.c_str(), normal_path.length());
+
+		if (hashfile.tellp() != 0) {
+			hashfile.put('\n');
+		}
+		hashfile.write(fullpath.c_str(), fullpath.length());
 		hashfile.put(' ');
 	}
 	else {
-		hashfile.seekg(-2 - HASH_SIZE, std::ios::cur);
-		std::cout << "The old hash        : " << hash << std::endl;
+		hashfile.seekg(0-HASH_SIZE, std::ios::cur);
 	}
-	
-	auto&& newhash = calculateHash(filename);
 
-	std::cout << "The new hash was got: " << newhash << std::endl;
 	hashfile.seekp(hashfile.tellg());
-	hashfile.write(newhash.c_str(), HASH_SIZE);
+	hashfile.write(comp_info.newhash.c_str(), HASH_SIZE);
 }
