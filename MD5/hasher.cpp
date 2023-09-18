@@ -49,7 +49,6 @@ bool findInHashfile(std::istream& hashfile, const std::string& filename, std::st
 				return true;
 			};
 		}
-		//hashfile.ignore(1000, '\n');
 	}
 	return false;
 }
@@ -90,7 +89,6 @@ void printAllHash()
 	while (hashfile)
 	{
 		hashfile >> filename >> hash;
-		hashfile.ignore(1000, '\n');
 		if (hashfile)
 		{
 			checkData(filename, hash);
