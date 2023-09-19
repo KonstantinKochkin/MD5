@@ -90,3 +90,7 @@ Calculated hash:   1bc29b36f623ba82aaf6724fd3b16718
 Verification hash: 1bc29b36f623ba82aaf6724fd3b16718
 Verification was SUCCESSFUL!
 ```
+## TODO
+- Building
+- Unit tests
+- Integration tests
